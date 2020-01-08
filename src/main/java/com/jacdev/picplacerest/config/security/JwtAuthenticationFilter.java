@@ -42,26 +42,20 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
     private AuthenticationManager authenticationManager;
     private UserRepository userRepository;
+    
 
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
     	System.out.println("Entered JwtAuthenticationFilter()");
         this.authenticationManager = authenticationManager;
-      
     }
+    
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest req,
                                                 HttpServletResponse res) throws AuthenticationException {
         try {
-            UserEntity user = new ObjectMapper()
-                    .readValue(req.getInputStream(), UserEntity.class);
-            
-            System.out.println("Attempting authentication! with creds: " + user.getUsername() + " " + user.getPassword());
-            System.out.println("other info");
-            System.out.println("authorities :" + Arrays.toString(user.getAuthorities().toArray()));
-            System.out.println("email :" + user.getEmail());
-            
-
+            UserEntity user = new ObjectMapper().readValue(req.getInputStream(), UserEntity.class);
+            logUserDetails(user);
             return authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                     		user.getUsername(),
@@ -72,43 +66,18 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             throw new RuntimeException(e);
         }
     }
+    
+    
+    private void logUserDetails(UserEntity user) {
+    	log("Attempting authentication! with creds: " + user.getUsername() + " " + user.getPassword());
+    	log("authorities :" + Arrays.toString(user.getAuthorities().toArray()));
+    	log("email :" + user.getEmail());
+    }
 
     
     private void log(String msg) {
     	System.out.println("JwtAuthenticationFilter" + msg);
     }
-    
-    
-    
-    
-    private void initUserRepository(HttpServletRequest request) {
-    	
-    	if(userRepository == null) {
-
-            ServletContext servletContext = request.getServletContext();
-            WebApplicationContext webApplicationContext = WebApplicationContextUtils.getWebApplicationContext(servletContext);
-            userRepository = webApplicationContext.getBean(UserRepository.class);
-    	}
-    	if(userRepository == null) {
-    		log("User repository is still null after loading the bean!");
-    	}
-    	
-    	
-    }
-    
-    
-    
-
-    private List<String> getRolesListFromGrantedAuthorities(Authentication auth){
-
-    	List <String> grantedAuthorities = new ArrayList<>();
-    	for(GrantedAuthority gAuth : auth.getAuthorities()) {
-    		log("GrantedAuthorites from auth: " + gAuth.getAuthority());
-    		grantedAuthorities.add(gAuth.getAuthority());
-    	}
-    	return grantedAuthorities;
-    }
-    
     
     
     @Override
@@ -117,28 +86,49 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                                             FilterChain chain,
                                             Authentication auth) throws IOException, ServletException {
 
-    	
     	initUserRepository(req);
-    	
-    	String username = ((User) auth.getPrincipal()).getUsername();
-    	JWTCreator.Builder tokenBuilder = JWT.create()
-                .withSubject(username)
-                .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME));
-    	
-    	if(userRepository == null) {
-    		log("UserRepository is still null!");
-    	}
-    	else {
-    		UserEntity userEntity = userRepository.findByUsername(username);
-    		for(UserRole role: userEntity.getAuthorities()) {
-    			tokenBuilder = tokenBuilder.withClaim(role.getAuthority(), "true");
-    		}
-    	
-    		
-    	}
-        String token = tokenBuilder.sign(HMAC512(SECRET.getBytes()));
+    	String username = getUsername(auth);
+        String token = createToken(username);
         res.addHeader(HEADER_STRING, TOKEN_PREFIX + token); 
         System.out.println("Authentication successful!");
-                
     }
+    
+    
+    private void initUserRepository(HttpServletRequest request) { 	
+    	if(userRepository != null) {
+    		return;
+    	}
+    	ServletContext servletContext = request.getServletContext();
+        WebApplicationContext webApplicationContext = WebApplicationContextUtils.getWebApplicationContext(servletContext);
+        userRepository = webApplicationContext.getBean(UserRepository.class);
+    }
+    
+    
+    private String getUsername(Authentication auth) {
+    	return ((User) auth.getPrincipal()).getUsername();
+    }
+    
+    
+    private String createToken(String username){
+    	JWTCreator.Builder tokenBuilder =  JWT.create()
+        .withSubject(username)
+        .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME));	
+    	
+    	tokenBuilder = addClaims(tokenBuilder, username);
+    	return tokenBuilder.sign(HMAC512(SECRET.getBytes()));
+    }
+    
+    
+    private JWTCreator.Builder addClaims(JWTCreator.Builder tokenBuilder, String username){
+    	if(userRepository == null) {
+    		return tokenBuilder;
+    	}
+    	UserEntity userEntity = userRepository.findByUsername(username);
+    	for(UserRole role: userEntity.getAuthorities()) {
+			tokenBuilder = tokenBuilder.withClaim(role.getAuthority(), "true");
+		}
+    	return tokenBuilder;
+    }
+    
+    
 }

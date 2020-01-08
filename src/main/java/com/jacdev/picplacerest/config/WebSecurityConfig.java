@@ -26,43 +26,38 @@ import com.jacdev.picplacerest.config.security.JwtAuthorizationFilter;
 @Order(1)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	
-
 	private static final String USER= "USER";
 	private static final String ADMIN = "ADMIN";
 	
 	
-
 	@Bean
 	public static BCryptPasswordEncoder BCryptPasswordEncoder(){
 		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 		return encoder;
 	}
 	
-	    @Bean
-	    @Override
-	    public AuthenticationManager authenticationManagerBean() throws Exception {
-	        return super.authenticationManagerBean();
-	    }
-    	@Autowired
-    	DataSource dataSource;
-    	
-	    
-		//Enable jdbc authentication
-        @Autowired
-        public void configAuthentication(AuthenticationManagerBuilder auth) throws Exception {
-        	System.out.println("****** Configuring datasource for authentication manager builder!");
-        	auth.jdbcAuthentication().dataSource(dataSource).passwordEncoder(BCryptPasswordEncoder());
-        }
+	@Bean
+	@Override
+	public AuthenticationManager authenticationManagerBean() throws Exception {
+	    return super.authenticationManagerBean();
+	}
+	@Autowired
+	DataSource dataSource;
+	
+	
+	//Enable jdbc authentication
+	@Autowired
+	public void configAuthentication(AuthenticationManagerBuilder auth) throws Exception {
+		System.out.println("****** Configuring datasource for authentication manager builder!");
+		auth.jdbcAuthentication().dataSource(dataSource).passwordEncoder(BCryptPasswordEncoder());
+	}
 	    
 	 @Override
 	 protected void configure(HttpSecurity http) throws Exception {
-	        //@formatter:off
-
+	       	
 		JwtAuthenticationFilter authenticationFilter = new JwtAuthenticationFilter(authenticationManager());
 		authenticationFilter.setFilterProcessesUrl("/svc/login");
-		
-		 //         .antMatchers("/auth/signin").permitAll()
-		 
+				 
 	        http
 	            .httpBasic().disable()
 	            .csrf().disable()
@@ -77,9 +72,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	                .antMatchers(HttpMethod.GET, "/svc/test3").hasAuthority(USER)
 	            .and()
 	            .addFilter(authenticationFilter)
-                .addFilter(new JwtAuthorizationFilter(authenticationManager()));
-	        
-	        //@formatter:on
+	            .addFilter(new JwtAuthorizationFilter(authenticationManager()));
 	    } 
 		
 }
