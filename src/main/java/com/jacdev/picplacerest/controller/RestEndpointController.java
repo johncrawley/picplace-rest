@@ -1,17 +1,23 @@
 package com.jacdev.picplacerest.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.jacdev.picplacerest.form.PhotoForm;
+import com.jacdev.picplacerest.service.PhotoService;
 
 //import com.jacdev.picplacerest.photoutils.PhotoSize;
 //import com.jacdev.picplacerest.service.PhotoService;
@@ -21,12 +27,52 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 class RestEndpointController {
 
+	@PostMapping(value="post_example")
+	public void postTest() {
+		System.out.println("POST Request!");
+	}
+	
+	@Autowired
+	PhotoService photoService;
+	
+	
+
+	@PostMapping(value = "/upload")
+	@ResponseStatus(HttpStatus.OK)
+	public String uploadImage( @ModelAttribute PhotoForm photoForm) { //@ModelAttribute("photo" )) {
+	
+		//Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		//String name = auth.getName();
+		//if(name == null) {
+		//	return new ModelAndView("upload", "message", "Unable to Upload");
+		//}
+		System.out.println("mainController uploadImage()  photo title: "+ photoForm.getTitle());
+		photoForm.setUsername("TEMP_NAME");// TODO: wire up authentication
+		photoService.addPhoto(photoForm);
+		
+		return "yes it was successful!";
+	}
+	
+	@CrossOrigin
+	@PostMapping(value = "/svc/uploadFile", 
+				consumes = "multipart/form-data", 
+				produces = "application/json")
+	@ResponseBody
+	@ResponseStatus(HttpStatus.OK)
+	public String uploadFile(@RequestParam("file") MultipartFile file) {
+		
+		System.out.println("file uploaded!");
+
+		return "OK";
+	}
+	
 	
 	@RequestMapping(value = "svc/v1/public/temp")
 	public Temp getTemp() {
 		return new Temp();
 	}
 
+	@CrossOrigin
 	@GetMapping(value = "svc/test1")
 	public Temp test1() {
 		

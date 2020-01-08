@@ -72,6 +72,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	                .antMatchers(HttpMethod.POST, SIGN_UP_URL).permitAll()
 	                .antMatchers(HttpMethod.GET, "/svc/test1").permitAll()
 	                .antMatchers(HttpMethod.GET, "/svc/login").permitAll()
+	                .antMatchers(HttpMethod.GET, "/svc/uploadFile").permitAll()
 	                .antMatchers(HttpMethod.GET, "/svc/test2").hasAuthority(USER)
 	                .antMatchers(HttpMethod.GET, "/svc/test3").hasAuthority(USER)
 	            .and()
