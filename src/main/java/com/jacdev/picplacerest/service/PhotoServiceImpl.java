@@ -1,6 +1,7 @@
 package com.jacdev.picplacerest.service;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -10,15 +11,17 @@ import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.jacdev.picplacerest.entity.Photo;
 import com.jacdev.picplacerest.exception.BadRequestException;
-import com.jacdev.picplacerest.form.PhotoForm;
 import com.jacdev.picplacerest.repository.PhotoFileRepository;
 import com.jacdev.picplacerest.repository.PhotoRepository;
 import com.jacdev.picplacerest.utils.PhotoSize;
@@ -27,18 +30,25 @@ import com.jacdev.picplacerest.utils.PhotoSize;
 @Service
 public class PhotoServiceImpl implements PhotoService {
 
-
 	@Autowired private PhotoRepository photoRepository;
 	@Autowired private PhotoFileRepository photoFileRepository;
+	@Value("${file.directory}") private String language;
+	private long itemsCount; 
 
-	   @Value("${file.directory}")
-	   private String language;
+	@Autowired private ResourceLoader resourceLoader;
+
+
+	@Value("${location.thumbnail_directory}") 	private String THUMBNAIL_DIR;
+	@Value("${location.medium_directory}") 		private String MEDIUM_DIR;
+	@Value("${location.large_directory}") 		private String LARGE_DIR;
+	
+	
 
 	public PhotoServiceImpl() {
 		// TODO Auto-generated constructor stub
 	}
 	
-	 
+
 	public Photo getPhoto(String photoId) {
 		long id = Long.valueOf(photoId).longValue();
 		System.out.println("photo ID = " + photoId);
@@ -51,13 +61,71 @@ public class PhotoServiceImpl implements PhotoService {
 		}
 		return photo;
 	}
+
+	
+	@Override
+	public Photo getPhoto(long id) {
+		Optional<Photo> optional = photoRepository.findById(id);
+		Photo photo = optional.orElse(new Photo());
+		if(photo.isInitialised()) {
+			photoFileRepository.attachPhotoBytes(photo, PhotoSize.MEDIUM);
+		}else {
+			System.out.println("photo is not initialised!");
+		}
+		return photo;
+	}
+
+	
+	@Override
+	public byte[] get(long id, String size) {
+		
+		String path = queryPath(id, size);
+		Resource resource = resourceLoader.getResource(path);
+		
+		try {
+			return StreamUtils.copyToByteArray(resource.getInputStream());
+		}
+		catch(IOException e) {
+			return new byte[0];
+		}
+	}
+
+	
+	private String queryPath(long id, String sizeStr) {
+
+		Optional<Photo> optional = photoRepository.findById(id);
+		Photo photo = optional.orElse(new Photo());
+		PhotoSize photoSize = getPhotoSize(sizeStr);
+		return photoFileRepository.getPath(photo, photoSize);
+	}
+	
+	
+	
+	private PhotoSize getPhotoSize(String size) {
+		return isNullOrEmpty(size) ? PhotoSize.MEDIUM : PhotoSize.valueOf(size.toUpperCase());
+	}
+	
+	private boolean isNullOrEmpty(String str) {
+		return str == null || str.isEmpty();
+	}
+	
+	
+	
+
+	public Page<Photo> getPhotosDetails(String userId, String sizeStr, Pageable page){	
+		Page <Photo> photoPage =  photoRepository.findByUserId(userId, page);
+		
+		PhotoSize photoSize = getPhotoSize(sizeStr);
+		return photoRepository.findByUserId(userId, page);
+	}
+	
+	
 	
 	
 	public boolean deletePhoto(String userId, int photoId) {
 		
 		long id = Long.valueOf(photoId).longValue();
 		Optional<Photo> optional = photoRepository.findById(id);
-		Photo photo = optional.orElse(new Photo());
 		if(!optional.isPresent()) {
 			return false;
 		}
@@ -67,42 +135,25 @@ public class PhotoServiceImpl implements PhotoService {
 		return false;
 	}
 	
-	//public Photo getf
 
 	@Override
 	@Transactional
-	public boolean addPhoto(PhotoForm photoForm){
-		
-		String title = photoForm.getTitle();
-		String username = photoForm.getUsername();
-		byte[] bytes = getPhotoBytes(photoForm.getFile());
-		if(bytes.length == 0) {
-			return false;
-		}
-		
+	public Photo createPhoto(MultipartFile photoFile, String username) {
+
 		Photo photo = new Photo();
-		photo.setUserId(username);
-		photo.setTitle(title);
-		
-		photoRepository.save(photo);
-		long photoId = photo.getId();
-		
-		return photoFileRepository.save(bytes, username, photoId);
-	}
-	
-	
-	private byte[] getPhotoBytes(MultipartFile photoFile) {
-		byte[] bytes = new byte[0];
 		try {
-			bytes = photoFile.getBytes();
+			byte [] bytes = photoFile.getBytes();
+			photo.setUserId(username);
+			photo.setTitle("");
+			photo = photoRepository.save(photo);
+			photo = photoFileRepository.save(photo, bytes);
 		}catch(IOException e) {
-			e.printStackTrace();
+			return null;
 		}
-		return bytes;
+		return photo;
 	}
 	
-	private long itemsCount; 
-	
+		
 	@Override
 	public int getNumberOfPages(Pageable page) {
 		itemsCount = photoRepository.count();
@@ -112,10 +163,13 @@ public class PhotoServiceImpl implements PhotoService {
 		return numberOfPages == 0 ? 1 : numberOfPages;
 	}
 	
+
+	
 	@Override
-	public long getPhotoCountForUser(String userId) {
+	public long getPhotoCountFor(String userId) {
 		return photoRepository.countByUserId(userId);
 	}
+	
 	
 	@Override
 	public int getPhotosPerPage(Pageable page) {
@@ -126,7 +180,6 @@ public class PhotoServiceImpl implements PhotoService {
 	
 	@Override
 	public Page<Photo> getThumbnails(String username, Pageable pageable) {
-		// TODO Auto-generated method stub
 		Page<Photo> photos = photoRepository.findByUserId(username, pageable);
 		
 		photoFileRepository.attachThumbnailData(photos);
@@ -158,12 +211,6 @@ public class PhotoServiceImpl implements PhotoService {
 		return photoRepository.findByUserId(userId).stream().map(x -> x.getId()).collect(Collectors.toList());
 	}
 	
-
-	public String getImageBase64(String userId, long photoId, PhotoSize photoSize) {
-		validateUserAndResource(userId, photoId);
-		return photoFileRepository.getImageData(userId, photoId, photoSize);
-		
-	}
 	
 	private void validateUserAndResource(String userId, Long photoId) {
 		Optional<Photo> optional = photoRepository.findById(photoId);
@@ -175,7 +222,6 @@ public class PhotoServiceImpl implements PhotoService {
 			throw new BadRequestException();
 		}
 	}
-	
 	
 	
 }

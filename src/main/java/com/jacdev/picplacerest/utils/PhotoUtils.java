@@ -81,6 +81,7 @@ public class PhotoUtils {
 		return convertToBytes(thumbnailImage);
 	}
 	
+	
 	public byte[] createThumbnailByteArray(byte[] originalBytes) {
 		
 		BufferedImage bim = convertToImage(originalBytes);

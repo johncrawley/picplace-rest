@@ -14,13 +14,14 @@ public class FilepathResolver {
 	@Value("${location.medium_directory}") 		private String MEDIUM_DIR;
 	@Value("${location.large_directory}") 		private String LARGE_DIR;
 	@Value("${photo.extension}")				private String PHOTO_FILE_EXTENSION;
+	@Value("${location.absolute_path_prefix}")	private String ABSOLUTE_PATH_PREFIX;
 	
 	public FilepathResolver() {
 		
 	}
 	
 	public String getPhotoPath(String userId, long photoId, PhotoSize size) {
-		return getPhotoDir(userId, size) + photoId + PHOTO_FILE_EXTENSION;
+		return ABSOLUTE_PATH_PREFIX + getPhotoDir(userId, size) + photoId + PHOTO_FILE_EXTENSION;
 	}
 
 	public String getPhotoFileExtension() {

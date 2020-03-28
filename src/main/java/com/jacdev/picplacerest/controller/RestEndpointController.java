@@ -1,175 +1,129 @@
 package com.jacdev.picplacerest.controller;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.jacdev.picplacerest.form.PhotoForm;
+import com.jacdev.picplacerest.entity.Photo;
 import com.jacdev.picplacerest.service.PhotoService;
-
-//import com.jacdev.picplacerest.photoutils.PhotoSize;
-//import com.jacdev.picplacerest.service.PhotoService;
-
 
 
 @RestController
 class RestEndpointController {
 
-	@PostMapping(value="post_example")
-	public void postTest() {
-		System.out.println("POST Request!");
-	}
 	
-	@Autowired
-	PhotoService photoService;
+	@Autowired private PhotoService photoService;
+	private String photoBaseUrl = "/svc/photo";
 	
-	
-
-	@PostMapping(value = "/upload")
-	@ResponseStatus(HttpStatus.OK)
-	public String uploadImage( @ModelAttribute PhotoForm photoForm) { //@ModelAttribute("photo" )) {
-	
-		//Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		//String name = auth.getName();
-		//if(name == null) {
-		//	return new ModelAndView("upload", "message", "Unable to Upload");
-		//}
-		System.out.println("mainController uploadImage()  photo title: "+ photoForm.getTitle());
-		photoForm.setUsername("TEMP_NAME");// TODO: wire up authentication
-		photoService.addPhoto(photoForm);
-		
-		return "yes it was successful!";
-	}
 	
 	@CrossOrigin
 	@PostMapping(value = "/svc/uploadFile", 
-				consumes = "multipart/form-data", 
-				produces = "application/json")
-	@ResponseBody
-	@ResponseStatus(HttpStatus.OK)
-	public String uploadFile(@RequestParam("file") MultipartFile file) {
+				consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+				produces = {MediaType.TEXT_PLAIN_VALUE})
+	public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+
+		Photo photo = photoService.createPhoto(file, getUsername());
+		if(photo == null) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+
+		URI photoUri = createURI(photo.getId());
 		
-		System.out.println("file uploaded!");
-
-		return "OK";
+		return photoUri == null ? 
+					ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+				: 	ResponseEntity.created(photoUri).build();
 	}
 	
 	
-	@RequestMapping(value = "svc/v1/public/temp")
-	public Temp getTemp() {
-		return new Temp();
-	}
+	private URI createURI(Long photoId) {
 
+		String photoUrl = photoBaseUrl + "?id=" + photoId;
+		try {
+			return new URI(photoUrl); 
+		}catch (URISyntaxException e) {
+				e.printStackTrace();
+				return null;
+		}
+	}
+	
 	@CrossOrigin
-	@GetMapping(value = "svc/test1")
-	public Temp test1() {
+	@GetMapping(value = "/svc/photoIds")
+	public ResponseEntity<List<Long>> getPhotoIds(){
 		
-		return new Temp("Jim");
-	}
-	@GetMapping(value = "svc/test2")
-	public Temp test2() {
-		return new Temp();
-	}
-	@GetMapping(value = "svc/test3")
-	public Temp test3() {
-		
-		return new Temp("Ivor");
-	}
-	@GetMapping(value = "svc/test4")
-	public Temp test4() {
-		
-		return new Temp("Amy");
-	}
-	
-	@RequestMapping(value = "svc/v1/private/accounts/{accountNumber}")
-	public String getPrivateAccountData(@PathVariable final int accountNumber) {
-		return "Private Account Linked To " + accountNumber;
-	}
-	@RequestMapping(value = "svc/v1/private/admin/accounts/{accountNumber}")
-	public String getPrivateAccountDataAdmin(@PathVariable final int accountNumber) {
-		return "Private Account with extra info Linked To " + accountNumber;
-	}
-	
-	/*
-	
-	@Autowired PhotoService photoService;
-	
-	@GetMapping(value = "svc/v1/private/photos")
-	public List<Long> getPhotoIds(){
-		
-		return photoService.getPhotoIds(getUsername());
-		
-	}
-	
-	@DeleteMapping(value = "svc/v1/private/photos/{photoId}")
-	@ResponseStatus(HttpStatus.OK)
-	public void deletePhoto(@PathVariable("photoId") long photoId) {
-		System.out.println("RestEndpointController - deletePhoto()  : id: "+  photoId);
-		photoService.deletePhoto(getUsername(), photoId);
-	}
-	
-
-
-	@GetMapping(value = "svc/v1/private/photos/th/{photoId}")
-	public String getThumbnailImage(@PathVariable("photoId") long photoId) {
 		String username = getUsername();
-		return photoService.getImageBase64(username, photoId, PhotoSize.THUMBNAIL);
+		List<Long> ids = photoService.getPhotoIds(username);
+		if(ids.isEmpty()) {
+			return ResponseEntity.noContent().build();
+		}
+		return new ResponseEntity<List<Long>>(ids, HttpStatus.OK);
 	}
-
-	@GetMapping(value = "svc/v1/private/photos/{photoId}")
-	public String getMediumImage(@PathVariable("photoId") long photoId) {
-		String username = getUsername();
-		return photoService.getImageBase64(username, photoId, PhotoSize.MEDIUM);
-	}
-
-	@GetMapping(value = "svc/v1/private/photos/orig/{photoId}")
-	public String getOriginalImage(@PathVariable("photoId") long photoId) {
-		String username = getUsername();
-		return photoService.getImageBase64(username, photoId, PhotoSize.LARGE);
-	}
-
-	*/
 	
-	   private String getUsername() {
-		   Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		   return auth == null ? null : auth.getName();
-	   }
+	@CrossOrigin
+	@GetMapping(value = "/svc/photoIdsPage")
+	public ResponseEntity<PhotoGroup> getPhotoIdsPage(Pageable page, @RequestParam(value = "photoSize", required=false) String size){
+		System.out.println("Entered getPhotoIdsPage() for " + getUsername());
+		Page<Photo> photoPage = photoService.getPhotosDetails(getUsername(), size, page);
+		List<Photo> photos = photoPage.getContent();
+		PhotoGroup photoGroup = new PhotoGroup(photoPage.getContent(), photoPage.isLast());
+		return photos.isEmpty() ? ResponseEntity.noContent().build() 
+								: ResponseEntity.ok().body(photoGroup);
+	}
+	
+	
+	@GetMapping(value = "/svc/photo", produces = MediaType.IMAGE_JPEG_VALUE)
+	public ResponseEntity<byte[]> getPhoto(
+				@RequestParam(value = "id") Long id, 
+				@RequestParam(value="size", required=false) String size,
+				Pageable page) throws IOException {
+				
+		byte[] bytes = photoService.get(id, size);
+		if(bytes.length == 0) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(bytes);
+	}
+	
+	
+	@GetMapping(value = "/svc/photocount")
+	public ResponseEntity<String> getPhotoCount(){
+		
+		String username = getUsername();
+		long count = photoService.getPhotoCountFor(username);
+		return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("" + count);
+	}
+	
+
+
+	private String getUsername() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		return auth == null ? null : auth.getName();
+	}
+	
+	
+	private void log(String msg) {
+		System.out.println("RestEndpointController: " + msg);
+	}
 
 	
-	class Temp{
-		String name = "joe";
-		String address = "123 Fake St.";
-		int age = 42;
-		
-		public Temp() {}
-		
-		public Temp(String name) {
-			this.name = name;
-		}
-		
-		public String getName() {
-			return name;
-		}
-		public String getAddress() {
-			return address;
-		}
-		public int getAge() {
-			return age;
-		}
-		
-	}
 	
 	
 }

@@ -21,14 +21,24 @@ public class Photo {
 	private String description;
 	private String title;
 	private boolean isPublic;
+	
 	//TODO :  the corresponding db columns and probably these too
 	//			since we only want to provide a path to the image resource
 	@Transient private String thumbnailData; //base64 bytes
 	@Transient private String mediumData; //base64 bytes
 	@Transient private String largeData; //base64 bytes
 	
+	@Transient private byte[] mediumBytes;
 	
 	public Photo() {
+	}
+	
+	public byte[] getMediumBytes() {
+		return this.mediumBytes;
+	}
+	
+	public void setMediumBytes(byte[] bytes) {
+		this.mediumBytes = bytes.clone(); //TODO: might want to just copy the reference for speed.
 	}
 	
 	public long getId() {
