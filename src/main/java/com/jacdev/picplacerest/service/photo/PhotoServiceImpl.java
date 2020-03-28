@@ -1,4 +1,4 @@
-package com.jacdev.picplacerest.service;
+package com.jacdev.picplacerest.service.photo;
 
 
 import java.io.File;

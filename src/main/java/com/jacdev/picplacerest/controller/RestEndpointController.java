@@ -24,7 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.jacdev.picplacerest.entity.Photo;
-import com.jacdev.picplacerest.service.PhotoService;
+import com.jacdev.picplacerest.service.photo.PhotoService;
+import com.jacdev.picplacerest.service.user.UserService;
 
 
 @RestController
@@ -32,6 +33,7 @@ class RestEndpointController {
 
 	
 	@Autowired private PhotoService photoService;
+	@Autowired private UserService userService;
 	private String photoBaseUrl = "/svc/photo";
 	
 	
@@ -102,6 +104,11 @@ class RestEndpointController {
 		return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(bytes);
 	}
 	
+	
+	@GetMapping(value = "/svc/userExists")
+	public ResponseEntity<Boolean> userNameExists(@RequestParam(value= "username") String username){
+		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(userService.exists(username));
+	}
 	
 	@GetMapping(value = "/svc/photocount")
 	public ResponseEntity<String> getPhotoCount(){
