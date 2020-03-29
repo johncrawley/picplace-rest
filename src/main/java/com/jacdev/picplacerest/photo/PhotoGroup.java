@@ -1,8 +1,6 @@
-package com.jacdev.picplacerest.controller;
+package com.jacdev.picplacerest.photo;
 
 import java.util.List;
-
-import com.jacdev.picplacerest.entity.Photo;
 
 public class PhotoGroup {
 	

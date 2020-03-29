@@ -1,4 +1,4 @@
-package com.jacdev.picplacerest.repository;
+package com.jacdev.picplacerest.photo.repository;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
-import com.jacdev.picplacerest.entity.Photo;
+import com.jacdev.picplacerest.photo.Photo;
 import com.jacdev.picplacerest.utils.FilepathResolver;
 import com.jacdev.picplacerest.utils.PhotoSize;
 import com.jacdev.picplacerest.utils.PhotoUtils;

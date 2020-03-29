@@ -1,8 +1,8 @@
-package com.jacdev.picplacerest.repository.user;
+package com.jacdev.picplacerest.user.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.jacdev.picplacerest.model.user.UserEntity;
+import com.jacdev.picplacerest.user.UserEntity;
 
 public interface UserRepository extends CrudRepository<UserEntity, String> {
 

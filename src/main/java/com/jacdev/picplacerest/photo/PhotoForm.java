@@ -1,4 +1,4 @@
-package com.jacdev.picplacerest.form;
+package com.jacdev.picplacerest.photo;
 
 
 import org.springframework.web.multipart.MultipartFile;

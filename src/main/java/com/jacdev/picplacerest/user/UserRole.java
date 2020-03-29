@@ -1,4 +1,4 @@
-package com.jacdev.picplacerest.model.user;
+package com.jacdev.picplacerest.user;
 
 import javax.persistence.Embeddable;
 

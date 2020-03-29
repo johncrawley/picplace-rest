@@ -32,9 +32,9 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jacdev.picplacerest.model.user.UserEntity;
-import com.jacdev.picplacerest.model.user.UserRole;
-import com.jacdev.picplacerest.repository.user.UserRepository;
+import com.jacdev.picplacerest.user.UserEntity;
+import com.jacdev.picplacerest.user.UserRole;
+import com.jacdev.picplacerest.user.repository.UserRepository;
 
 
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {

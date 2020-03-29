@@ -17,15 +17,16 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.jacdev.picplacerest.entity.Photo;
-import com.jacdev.picplacerest.service.photo.PhotoService;
-import com.jacdev.picplacerest.service.user.UserService;
+import com.jacdev.picplacerest.photo.Photo;
+import com.jacdev.picplacerest.photo.PhotoGroup;
+import com.jacdev.picplacerest.photo.service.PhotoService;
+import com.jacdev.picplacerest.user.UserForm;
+import com.jacdev.picplacerest.user.service.UserService;
 
 
 @RestController
@@ -105,14 +106,23 @@ class RestEndpointController {
 	}
 	
 	
-	@GetMapping(value = "/svc/userExists")
-	public ResponseEntity<Boolean> userNameExists(@RequestParam(value= "username") String username){
+	@GetMapping(path = "/svc/users/{username}", params="exists")
+	public ResponseEntity<Boolean> userExists(@PathVariable String username){
+		log("userExists: " + username);
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(userService.exists(username));
 	}
+
+	
+	@PutMapping(path = "/svc/users/{username}")
+	public ResponseEntity<Boolean> createUser(UserForm form){
+		
+	
+		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(userService.createUser(form));
+	}
+	
 	
 	@GetMapping(value = "/svc/photocount")
 	public ResponseEntity<String> getPhotoCount(){
-		
 		String username = getUsername();
 		long count = photoService.getPhotoCountFor(username);
 		return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("" + count);

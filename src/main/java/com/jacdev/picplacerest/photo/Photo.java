@@ -1,4 +1,4 @@
-package com.jacdev.picplacerest.entity;
+package com.jacdev.picplacerest.photo;
 
 import javax.persistence.Basic;
 import javax.persistence.Column;

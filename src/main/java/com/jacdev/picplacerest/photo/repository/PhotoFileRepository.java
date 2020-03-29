@@ -1,10 +1,10 @@
-package com.jacdev.picplacerest.repository;
+package com.jacdev.picplacerest.photo.repository;
 
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 
-import com.jacdev.picplacerest.entity.Photo;
+import com.jacdev.picplacerest.photo.Photo;
 import com.jacdev.picplacerest.utils.PhotoSize;
 
 public interface PhotoFileRepository {

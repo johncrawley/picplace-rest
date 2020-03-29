@@ -1,4 +1,4 @@
-package com.jacdev.picplacerest.service.photo;
+package com.jacdev.picplacerest.photo.service;
 
 
 import java.io.File;
@@ -20,10 +20,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.jacdev.picplacerest.entity.Photo;
 import com.jacdev.picplacerest.exception.BadRequestException;
-import com.jacdev.picplacerest.repository.PhotoFileRepository;
-import com.jacdev.picplacerest.repository.PhotoRepository;
+import com.jacdev.picplacerest.photo.Photo;
+import com.jacdev.picplacerest.photo.repository.PhotoFileRepository;
+import com.jacdev.picplacerest.photo.repository.PhotoRepository;
 import com.jacdev.picplacerest.utils.PhotoSize;
 
 

@@ -1,4 +1,4 @@
-package com.jacdev.picplacerest.model.user;
+package com.jacdev.picplacerest.user;
 
 import java.util.HashSet;
 import java.util.Set;
