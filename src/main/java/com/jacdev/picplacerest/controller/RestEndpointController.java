@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.jacdev.picplacerest.photo.Photo;
-import com.jacdev.picplacerest.photo.PhotoGroup;
 import com.jacdev.picplacerest.photo.service.PhotoService;
 import com.jacdev.picplacerest.user.UserForm;
 import com.jacdev.picplacerest.user.service.UserService;
@@ -82,13 +81,11 @@ class RestEndpointController {
 	
 	@CrossOrigin
 	@GetMapping(value = "/svc/photoIdsPage")
-	public ResponseEntity<PhotoGroup> getPhotoIdsPage(Pageable page, @RequestParam(value = "photoSize", required=false) String size){
+	public ResponseEntity<Page<Photo>> getPhotoIdsPage(Pageable page, @RequestParam(value = "photoSize", required=false) String size){
 		System.out.println("Entered getPhotoIdsPage() for " + getUsername());
 		Page<Photo> photoPage = photoService.getPhotosDetails(getUsername(), size, page);
-		List<Photo> photos = photoPage.getContent();
-		PhotoGroup photoGroup = new PhotoGroup(photoPage.getContent(), photoPage.isLast());
-		return photos.isEmpty() ? ResponseEntity.noContent().build() 
-								: ResponseEntity.ok().body(photoGroup);
+		return photoPage.isEmpty() ? ResponseEntity.noContent().build() 
+								: ResponseEntity.ok().body(photoPage);
 	}
 	
 	
