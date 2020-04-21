@@ -21,7 +21,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class UserEntity implements UserDetails {
 	
 	@Id
-	private String username;
+	private String username; 
 	private boolean enabled;
 	private String email, password, firstname, lastname, gender, countryCode;
 	
@@ -42,15 +42,17 @@ public class UserEntity implements UserDetails {
 	}
 	
 	public String getUsername() {
-		return this.username;
+		System.out.println("Getting username: " + username);
+		return username;
 	}
 	
 	
 	public void setAuthorities(Set<UserRole> authorities) {this.authorities = authorities;
 			System.out.println("UserEntity authorities retrieved count: " + authorities.size());
 			authorities.stream().map(a -> "retrieved--->> a.getAuthority())").forEach(System.out::println);
-			
 	}
+	
+	
 	public Set<UserRole> getAuthorities(){return this.authorities;}
 	
 	@Basic public boolean isEnabled() {return this.enabled;}

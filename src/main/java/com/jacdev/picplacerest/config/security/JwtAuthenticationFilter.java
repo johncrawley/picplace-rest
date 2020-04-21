@@ -7,11 +7,9 @@ import static com.jacdev.picplacerest.config.security.SecurityConstants.SECRET;
 import static com.jacdev.picplacerest.config.security.SecurityConstants.TOKEN_PREFIX;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletContext;
@@ -20,10 +18,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.context.WebApplicationContext;
@@ -56,14 +54,16 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         try {
             UserEntity user = new ObjectMapper().readValue(req.getInputStream(), UserEntity.class);
             logUserDetails(user);
-            return authenticationManager.authenticate(
+            Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                     		user.getUsername(),
                     		user.getPassword(),
                             Collections.emptyList())
-            );
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            		);
+            return auth;
+        } catch (IOException | BadCredentialsException e) {
+            e.printStackTrace();
+            return null;
         }
     }
     
@@ -76,7 +76,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
     
     private void log(String msg) {
-    	System.out.println("JwtAuthenticationFilter" + msg);
+    	System.out.println("JwtAuthenticationFilter " + msg);
     }
     
     
@@ -85,13 +85,12 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                                             HttpServletResponse res,
                                             FilterChain chain,
                                             Authentication auth) throws IOException, ServletException {
-
     	initUserRepository(req);
     	String username = getUsername(auth);
         String token = createToken(username);
-        res.addHeader(HEADER_STRING, TOKEN_PREFIX + token); 
-        System.out.println("Authentication successful!");
+        res.addHeader(HEADER_STRING, TOKEN_PREFIX + token);
     }
+    
     
     
     private void initUserRepository(HttpServletRequest request) { 	

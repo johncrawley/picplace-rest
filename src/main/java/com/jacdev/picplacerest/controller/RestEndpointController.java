@@ -3,7 +3,6 @@ package com.jacdev.picplacerest.controller;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -17,7 +16,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.jacdev.picplacerest.photo.Photo;
 import com.jacdev.picplacerest.photo.service.PhotoService;
 import com.jacdev.picplacerest.user.UserForm;
+import com.jacdev.picplacerest.user.service.UserRequestStatus;
 import com.jacdev.picplacerest.user.service.UserService;
 
 
@@ -47,9 +47,7 @@ class RestEndpointController {
 		if(photo == null) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
-
 		URI photoUri = createURI(photo.getId());
-		
 		return photoUri == null ? 
 					ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
 				: 	ResponseEntity.created(photoUri).build();
@@ -57,7 +55,6 @@ class RestEndpointController {
 	
 	
 	private URI createURI(Long photoId) {
-
 		String photoUrl = photoBaseUrl + "?id=" + photoId;
 		try {
 			return new URI(photoUrl); 
@@ -67,22 +64,10 @@ class RestEndpointController {
 		}
 	}
 	
-	@CrossOrigin
-	@GetMapping(value = "/svc/photoIds")
-	public ResponseEntity<List<Long>> getPhotoIds(){
-		
-		String username = getUsername();
-		List<Long> ids = photoService.getPhotoIds(username);
-		if(ids.isEmpty()) {
-			return ResponseEntity.noContent().build();
-		}
-		return new ResponseEntity<List<Long>>(ids, HttpStatus.OK);
-	}
 	
 	@CrossOrigin
 	@GetMapping(value = "/svc/photoIdsPage")
 	public ResponseEntity<Page<Photo>> getPhotoIdsPage(Pageable page, @RequestParam(value = "photoSize", required=false) String size){
-		System.out.println("Entered getPhotoIdsPage() for " + getUsername());
 		Page<Photo> photoPage = photoService.getPhotosDetails(getUsername(), size, page);
 		return photoPage.isEmpty() ? ResponseEntity.noContent().build() 
 								: ResponseEntity.ok().body(photoPage);
@@ -102,19 +87,25 @@ class RestEndpointController {
 		return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(bytes);
 	}
 	
-	
-	@GetMapping(path = "/svc/users/{username}", params="exists")
-	public ResponseEntity<Boolean> userExists(@PathVariable String username){
-		log("userExists: " + username);
-		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(userService.exists(username));
-	}
 
+	@GetMapping(path = "/svc/available", params="username")
+	public ResponseEntity<String> usernameAvailable(@RequestParam(name="username") String username){
+		if(userService.exists(username)) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists.");
+		}
+		return ResponseEntity.ok().body("Username is available.");
+	}
 	
-	@PutMapping(path = "/svc/users/{username}")
-	public ResponseEntity<Boolean> createUser(UserForm form){
+	
+	@CrossOrigin
+	@PostMapping(path = "/svc/signup")
+	public ResponseEntity<String> createUser(@RequestBody UserForm userForm){
 		
-	
-		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(userService.createUser(form));
+		UserRequestStatus userRequestStatus =  userService.createUser(userForm);
+		HttpStatus httpStatus = userRequestStatus == UserRequestStatus.USER_ADDED ?
+				HttpStatus.CREATED : HttpStatus.FORBIDDEN;
+		
+		return ResponseEntity.status(httpStatus).body(userRequestStatus.getMessage());
 	}
 	
 	
@@ -125,7 +116,6 @@ class RestEndpointController {
 		return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("" + count);
 	}
 	
-
 
 	private String getUsername() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();

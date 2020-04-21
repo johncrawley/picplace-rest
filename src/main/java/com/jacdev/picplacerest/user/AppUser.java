@@ -1,17 +1,10 @@
 package com.jacdev.picplacerest.user;
 
 
-import java.util.Collection;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.Transient;
 
-import org.assertj.core.util.Arrays;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 
 
 @Entity
@@ -21,7 +14,6 @@ public class AppUser{
     private String username,firstName,lastName, gender, email,countryCode;
     private String encrytedPassword;
     private boolean enabled;
-    private boolean authenticated;
 
     public AppUser() {
 

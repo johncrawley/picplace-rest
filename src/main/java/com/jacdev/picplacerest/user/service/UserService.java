@@ -6,5 +6,5 @@ public interface UserService {
 	
 	
 	public boolean exists(String username);
-	public boolean createUser(UserForm userForm);
+	public UserRequestStatus createUser(UserForm userForm);
 }

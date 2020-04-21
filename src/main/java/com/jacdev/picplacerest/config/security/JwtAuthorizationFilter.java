@@ -47,7 +47,6 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 		}
 
 		UsernamePasswordAuthenticationToken authentication = getAuthentication(req);
-		logUserAuthorities(authentication);
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		chain.doFilter(req, res);
 	}
@@ -57,9 +56,8 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 	}
 
 	private void logUserAuthorities(UsernamePasswordAuthenticationToken authentication) {
-		log("Authorities for user " + authentication.getName() + " count: " + authentication.getAuthorities().size());
 		authentication.getAuthorities().stream().map(x -> "Found Authority ->" + x.getAuthority())
-				.forEach(System.out::println);
+				.forEach(this::log);
 	}
 
 	private void log(String msg) {
@@ -80,9 +78,11 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 	}
 
 	private DecodedJWT deriveDecodedTokenFrom(String token) {
-
-		return JWT.require(Algorithm.HMAC512(SECRET.getBytes())).build().verify(token.replace(TOKEN_PREFIX, ""));
+		return JWT.require(Algorithm.HMAC512(SECRET.getBytes()))
+				.build()
+				.verify(token.replace(TOKEN_PREFIX, ""));
 	}
+	
 
 	private Set<UserRole> getAuthoritiesFrom(Map<String, Claim> claimsMap) {
 

@@ -1,6 +1,8 @@
 package com.jacdev.picplacerest.utils;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -16,22 +18,41 @@ public class FilepathResolver {
 	@Value("${photo.extension}")				private String PHOTO_FILE_EXTENSION;
 	@Value("${location.absolute_path_prefix}")	private String ABSOLUTE_PATH_PREFIX;
 	
-	public FilepathResolver() {
-		
+	public FilepathResolver() {}
+	
+
+	public String getPhotoPath(String userId, long photoId, PhotoSize size) {
+		return ABSOLUTE_PATH_PREFIX + getPhotoCreationPath(userId, photoId, size);
 	}
 	
-	public String getPhotoPath(String userId, long photoId, PhotoSize size) {
-		return ABSOLUTE_PATH_PREFIX + getPhotoDir(userId, size) + photoId + PHOTO_FILE_EXTENSION;
+	
+	public String getPhotoCreationPath(String userId, long photoId, PhotoSize size) {
+		return getPhotoDir(userId, size) + photoId + PHOTO_FILE_EXTENSION;
 	}
+	
 
 	public String getPhotoFileExtension() {
 		return this.PHOTO_FILE_EXTENSION; 
 	}
 	
-	public String getPhotoDir(String userId, PhotoSize size) { 
+	
+	public List<String> getAllPhotoDirs(String userId){
+		List <String> directories = new ArrayList<>();
+		directories.add(getPhotoDir(userId, PhotoSize.THUMBNAIL));
+		directories.add(getPhotoDir(userId, PhotoSize.MEDIUM));
+		directories.add(getPhotoDir(userId, PhotoSize.LARGE));
+		return directories;
+	}
+	
+	
+	public String getPhotoDir(String userId, PhotoSize size) {
+		String path = getUserDir(userId) + File.separator + getPhotoDir(size);
+		return path;
+	}
+	
 
-		String path = IMAGES_LOCATION +  userId + File.separator + getPhotoDir(size);
-
+	public String getUserDir(String userId) {
+		String path = IMAGES_LOCATION + userId;
 		if(USE_HOME_DIR) {
 			return System.getProperty("user.home") + File.separator + path;
 		} 

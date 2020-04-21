@@ -3,13 +3,10 @@ package com.jacdev.picplacerest.photo.repository;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Optional;
-import java.util.Scanner;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -22,48 +19,61 @@ import com.jacdev.picplacerest.utils.FilepathResolver;
 import com.jacdev.picplacerest.utils.PhotoSize;
 import com.jacdev.picplacerest.utils.PhotoUtils;
 
+
 @Component
 public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 
 	@Autowired private FilepathResolver filepathResolver;
 	@Autowired private PhotoUtils photoUtils;
-
 	final String ABSOLUTE_PATH_PREFIX = "file://";
 	
+	
 	public PhotoFileRepositoryImpl() {
-		// TODO Auto-generated constructor stub
 	}
 
+	
+	public boolean createUserDirs(String username) {		
+		return createUserDir(username) && createPhotoDirs(username);
+	}
+	
+	
+	private boolean createUserDir(String username) {
+		File userDir = new File(filepathResolver.getUserDir(username));
+		return userDir.mkdir();
+	}
+	
+	
+	private boolean createPhotoDirs(String username) {
+		for(String dir : filepathResolver.getAllPhotoDirs(username)) {
+			boolean wasPhotoDirCreated = new File(dir).mkdir();
+			if(!wasPhotoDirCreated) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	
 	@Override
 	public Photo save(Photo photo, byte[] bytes) {
 		String userId = photo.getUserId();
 		long photoId = photo.getId();
-		boolean isSaved =  savePhoto(bytes,userId, photoId, PhotoSize.LARGE) && 
-				savePhoto(bytes,userId, photoId, PhotoSize.MEDIUM) && 
-				savePhoto(bytes,userId, photoId, PhotoSize.THUMBNAIL);
-
-		if(isSaved) {
-			return photo;
-		}
-		
-		return null;
+		boolean isSaved = 	savePhoto(bytes,userId, photoId, PhotoSize.LARGE) && 
+							savePhoto(bytes,userId, photoId, PhotoSize.MEDIUM) && 
+							savePhoto(bytes,userId, photoId, PhotoSize.THUMBNAIL);
+		return isSaved ? photo : null;
 	}
 	
-	
 
-	private boolean savePhoto(byte[] bytes, String username, long photoId, PhotoSize photoSize) {
-		
+	private boolean savePhoto(byte[] bytes, String username, long photoId, PhotoSize photoSize) {	
 		byte[] bytesToWrite = photoUtils.createByteArray(bytes, photoSize);
-		String path = filepathResolver.getPhotoPath(username, photoId, photoSize);
-		
+		String path = filepathResolver.getPhotoCreationPath(username, photoId, photoSize);
 		return writeToFile(bytesToWrite, path);
 	}
 	
 	
-	
 	@Override
-	public boolean delete(String userId, long photoId) {
-		
+	public boolean delete(String userId, long photoId) {	
 		boolean largeDeleted = deletePhoto(userId, photoId, PhotoSize.LARGE);
 		boolean mediumDeleted = deletePhoto(userId, photoId, PhotoSize.MEDIUM);
 		boolean thumbnailDeleted = deletePhoto(userId, photoId, PhotoSize.THUMBNAIL);
@@ -75,8 +85,8 @@ public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 		String path = filepathResolver.getPhotoPath(userId,  photoId,  photoSize);
 		File file = new File(path);
 		return file.delete();
-		
 	}
+	
 	
 	@Override
 	public void attachPhotoData(Photo photo, PhotoSize photoSize) {
@@ -95,15 +105,13 @@ public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 		}
 	}
 	
+	
 	@Override
 	public String getImageData(String userId, long photoId, PhotoSize photoSize) {
-		
 		String path = filepathResolver.getPhotoPath(userId,  photoId,  photoSize);
 		return getPhotoData(path);
 	}
-	
-	
-		
+
 	
 	@Override
 	public void attachThumbnailData(Page<Photo> photos) {
@@ -114,23 +122,29 @@ public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 	}
 	
 	
-	
-	
 	private boolean writeToFile(byte[] bytes, String filename) {
-		
-		boolean success = false;
+		return createFile(filename) && writeBytesToFile(bytes, filename);
+	}
+	
+	
+	private boolean createFile(String filename) {
 		File file = new File(filename);
 		if(!file.exists()) {
 			try {
 				//file.mkdirs();
 				file.createNewFile();
-				System.out.println("Tried to create file: " + file.getAbsolutePath() + " exists: " + file.exists());
 			}catch(IOException e) {
-				System.out.println("Unable to create the file for saving image: " +  filename);
+				System.out.println("Unable to create the file for saving image: " +  file.getAbsolutePath());
 				e.printStackTrace(); 
 				return false;
 			}
-		} 
+		} 	
+		return true;
+	}
+	
+	
+	private boolean writeBytesToFile(byte[] bytes, String filename) {
+		boolean success = false;
 		try (OutputStream outputStream = new FileOutputStream(filename);
 				 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()){  
 	
@@ -150,10 +164,9 @@ public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 		byte[] content = new byte[(int) f.length()];
 
 		try (InputStream in = new FileInputStream(f)){
-			System.out.println("Reading file: "+  path);
-		    for (int off = 0, read;
-		        (read = in.read(content, off, content.length - off)) > 0;
-		        off += read);	    
+		    for (int offset = 0, read;
+		        (read = in.read(content, offset, content.length - offset)) > 0;
+		        offset += read);	    
 		    
 		    return DatatypeConverter.printBase64Binary(content);
 		    
@@ -162,6 +175,7 @@ public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 		}	
 		return "";		
 	}
+	
 	
 	@Override
 	public String getPath(Photo photo, PhotoSize photoSize) {
@@ -174,13 +188,11 @@ public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 		String path = filepathResolver.getPhotoPath(photo.getUserId(), photo.getId(), photoSize);
 		System.out.println("PhotoFileReposImpl attachPhotoBytes() path: "+  path);
 		byte[] bytes = getPhotoBytes(path);
-		
 		photo.setMediumBytes(bytes);
 	}
 	
 	
 	public byte[] getPhotoBytes(String path) {
-		
 		byte[] bytes = new byte[0];
 		File file = new File(path);
 		try (FileInputStream fis = new FileInputStream(file)){
@@ -189,6 +201,5 @@ public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 			e.printStackTrace();
 		}
 		return bytes;
-	
 	}
 }
