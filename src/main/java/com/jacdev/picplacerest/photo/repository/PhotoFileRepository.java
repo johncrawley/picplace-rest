@@ -15,4 +15,6 @@ public interface PhotoFileRepository {
 	public boolean createUserDirs(String username);	
 	public String getPath(Photo photo, PhotoSize photoSize);
 	public void attachPhotoBytes(Photo photo, PhotoSize photoSize);
+	
+	public boolean deleteUser(String username);
 }

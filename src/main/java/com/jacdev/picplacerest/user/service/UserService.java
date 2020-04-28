@@ -7,4 +7,5 @@ public interface UserService {
 	
 	public boolean exists(String username);
 	public UserRequestStatus createUser(UserForm userForm);
+	public void deleteUser(String username);
 }

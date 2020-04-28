@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -30,6 +32,39 @@ public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 	
 	public PhotoFileRepositoryImpl() {
 	}
+	
+	@Override
+	public boolean deleteUser(String username) {
+		File userDir = getUserDirectory(username);
+		return deleteFilesAndSubDirs(userDir) && userDir.delete();
+	}
+	
+	
+	private boolean deleteFilesAndSubDirs(File file) {
+		for(File f: file.listFiles()) {
+			if(!deleteFileOrDir(f)){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	
+	private boolean deleteFileOrDir(File f) {
+		if(f.isDirectory()) {
+			 if(!deleteFilesAndSubDirs(f)) {
+				 return false;
+			 }
+		}
+		if(!f.delete()) {
+			return false;
+		}
+		return true;
+	}
+	
+	private File getUserDirectory(String username) {
+		return new File(filepathResolver.getUserDir(username));
+	}
 
 	
 	public boolean createUserDirs(String username) {		
@@ -38,7 +73,7 @@ public class PhotoFileRepositoryImpl implements PhotoFileRepository {
 	
 	
 	private boolean createUserDir(String username) {
-		File userDir = new File(filepathResolver.getUserDir(username));
+		File userDir = getUserDirectory(username);
 		return userDir.mkdir();
 	}
 	

@@ -13,4 +13,5 @@ public interface PhotoRepository extends PagingAndSortingRepository<Photo, Long>
 	public Page<Photo> findByUserId(String userId, Pageable page);
 	public List<Photo> findByUserId(String userId);
 	public Long countByUserId(String userId);
+	public void deleteByUserId(String username);
 }
