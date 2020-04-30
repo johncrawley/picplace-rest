@@ -29,13 +29,14 @@ import com.jacdev.picplacerest.user.repository.UserRepository;
 
 public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 
-	@Autowired
-	UserRepository userRepository;
+	@Autowired UserRepository userRepository;
 
+	
 	public JwtAuthorizationFilter(AuthenticationManager authManager) {
 		super(authManager);
 	}
 
+	
 	@Override
 	protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
 			throws IOException, ServletException {
@@ -45,24 +46,27 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 			chain.doFilter(req, res);
 			return;
 		}
-
 		UsernamePasswordAuthenticationToken authentication = getAuthentication(req);
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		chain.doFilter(req, res);
 	}
 
+	
 	private boolean nonExistantOrIncorrect(String header) {
 		return header == null || !header.startsWith(TOKEN_PREFIX);
 	}
 
+	
 	private void logUserAuthorities(UsernamePasswordAuthenticationToken authentication) {
 		authentication.getAuthorities().stream().map(x -> "Found Authority ->" + x.getAuthority())
 				.forEach(this::log);
 	}
 
+	
 	private void log(String msg) {
 		System.out.println("JwtAuthorizationFilter: " + msg);
 	}
+	
 
 	private UsernamePasswordAuthenticationToken getAuthentication(HttpServletRequest request) {
 		String token = request.getHeader(HEADER_STRING);
@@ -77,6 +81,7 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 		return new UsernamePasswordAuthenticationToken(user, null, authorities);
 	}
 
+	
 	private DecodedJWT deriveDecodedTokenFrom(String token) {
 		return JWT.require(Algorithm.HMAC512(SECRET.getBytes()))
 				.build()
@@ -85,19 +90,27 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 	
 
 	private Set<UserRole> getAuthoritiesFrom(Map<String, Claim> claimsMap) {
-
 		Set<UserRole> authorities = new HashSet<>();
-		for (String key : claimsMap.keySet()) {
-			Claim claim = claimsMap.get(key);
-			if (claim == null) {
-				continue;
-			}
-			String claimValue = claim.asString();
-			if (claimValue != null && claimValue.equals("true")) {
-				authorities.add(new UserRole(key));
-			}
+		for (Map.Entry<String, Claim> entry : claimsMap.entrySet()) {
+			addKeyToAuthoritiesIfClaimValid(entry, authorities);
 		}
 		return authorities;
 	}
+	
+	
+	private void addKeyToAuthoritiesIfClaimValid(Map.Entry<String, Claim> entry, Set<UserRole> authorities) {
+		if (isClaimValid(entry.getValue())) {
+			authorities.add(new UserRole(entry.getKey()));
+		}
+	}
 
+		
+	private boolean isClaimValid(Claim claim) {
+		if(claim == null) {
+			return false;
+		}
+		return "true".equals(claim.asString());
+	}
+	
+	
 }

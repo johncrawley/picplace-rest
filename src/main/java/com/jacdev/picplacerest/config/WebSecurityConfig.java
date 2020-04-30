@@ -66,15 +66,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
             .and()
                 .authorizeRequests()
                 .antMatchers(HttpMethod.POST, SIGN_UP_URL).permitAll()
-                .antMatchers(HttpMethod.GET, "/svc/test1").permitAll()
                 .antMatchers(HttpMethod.GET, "/svc/login").permitAll()
-                .antMatchers(HttpMethod.GET, "/svc/uploadFile").permitAll()
-                .antMatchers(HttpMethod.GET, "/svc/test2").hasAuthority(USER)
-                .antMatchers(HttpMethod.GET, "/svc/test3").hasAuthority(USER)
+                .antMatchers(HttpMethod.GET, "/svc/uploadFile").hasAuthority(USER)
+                .antMatchers(HttpMethod.DELETE, "/svc/user/").hasAuthority(ADMIN)
+                .antMatchers(HttpMethod.POST, "/svc/unregister").hasAuthority(USER)
             .and()
             .addFilter(authenticationFilter)
             .addFilter(new JwtAuthorizationFilter(authenticationManager()));       
 	 } 
+	 
 	 
 	  @Bean
 	    CorsConfigurationSource corsConfigurationSource() {
@@ -91,30 +91,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 		       // source.registerCorsConfiguration("/**", new CorsConfiguration().applyPermitDefaultValues());
 		        
 		        source.registerCorsConfiguration("/**", configuration);
-
-		      
-		      
+		        
 	        return source;
 	    }
-	  
-	  
-	  
-	 // @Bean
-	  CorsConfigurationSource corsConfigurationSourceTEMP() {
-
-	      CorsConfiguration configuration = new CorsConfiguration();
-	      configuration.setAllowCredentials(true);
-	      configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-	      configuration.setAllowedHeaders(Arrays.asList("X-Requested-With","Origin","Content-Type","Accept","Authorization"));
-
-	      // This allow us to expose the headers
-	      configuration.setExposedHeaders(Arrays.asList("Access-Control-Allow-Headers", "Authorization, x-xsrf-token, Access-Control-Allow-Headers, Origin, Accept, X-Requested-With, " +
-	              "Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"));
-
-	      UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-	      source.registerCorsConfiguration("/**", configuration);
-	      return source;
-	  }
+	 
 	
 }
 

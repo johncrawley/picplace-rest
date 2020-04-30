@@ -29,6 +29,8 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jacdev.picplacerest.user.UserEntity;
 import com.jacdev.picplacerest.user.UserRole;
@@ -50,7 +52,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest req,
-                                                HttpServletResponse res) throws AuthenticationException {
+                                                HttpServletResponse res) throws AuthenticationException, BadCredentialsException{
         try {
             UserEntity user = new ObjectMapper().readValue(req.getInputStream(), UserEntity.class);
             logUserDetails(user);
@@ -61,9 +63,9 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
                             Collections.emptyList())
             		);
             return auth;
-        } catch (IOException | BadCredentialsException e) {
-            e.printStackTrace();
-            return null;
+        } catch(IOException  e) {
+        	e.printStackTrace();
+        	return null;
         }
     }
     
